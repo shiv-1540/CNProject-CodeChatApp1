@@ -11,6 +11,10 @@ import CodeRoom from './pages/CodeRoom/CodeRoom';
 import JoinCodeRoom from './pages/CodeRoom/JoinCodeRoom';
 import CodeEditor from "./pages/CodeEditor/CodeEditor"
 import { Toaster } from 'react-hot-toast';
+import EditProject from './pages/CreateProject/EditProject';
+import UploadFilePage from './pages/CreateProject/UploadFilePage';
+import CodeHome from './pages/HomePage/CodeHome';
+import EditorPage from './pages/CodeRoom/EditorPage';
 
 const routes = createBrowserRouter([
     { path: '/', element: <LoginForm /> },
@@ -19,9 +23,13 @@ const routes = createBrowserRouter([
     { path: '/createProject', element: <CreateProjectPage /> },
     { path: '/joinProject', element: <JoinProjectPage /> },
     { path: '/projectRoom/:roomCode', element: <ProjectRoomPage /> },
+    { path: '/editProjectRoom/:roomCode', element: <EditProject /> },
     { path: '/joinCodeRoom', element: <JoinCodeRoom /> },
     { path: '/codeRoom/:roomid', element: <CodeRoom /> },
     { path:'/code' , element: <CodeEditor/>},
+    { path:'/upoadFilePage', element: <UploadFilePage/> },
+    { path: '/home1', element: <CodeHome/>},
+    { path: '/editor/:roomId', element: <EditorPage/>},
 ]);
 
 const App = () => (

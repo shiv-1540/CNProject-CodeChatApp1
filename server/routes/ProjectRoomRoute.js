@@ -3,6 +3,10 @@ const router = express.Router();
 const mailSetup = require('../functions/mailer.js');
 const crypto = require('crypto');
 const { jwtAuthMiddleware } = require('../middleware/jwtSetup.js');
+const upload = require('../functions/multerSetup.js');
+const connection = require('../database/mysqlSetup.js');
+const fs = require('fs');
+const path = require('path');
 
 // const db = require('../database/databaseSetup.js');
 // database schemas
@@ -70,11 +74,12 @@ router.post('/createProject', jwtAuthMiddleware, async (req, res) => {
     }
 });
 
+
 // route to get projects created/joined by user
 router.get('/getProjectRooms', jwtAuthMiddleware, async (req, res) => {
     const userId = req.user.id;
     console.log(`User ID: ${userId}`);
-
+    
     try {
         const projectRooms = await ProjectRoomSchema.find({
             members: { $elemMatch: { userId: userId } }
@@ -168,5 +173,168 @@ router.post('/joinProjectRoom', jwtAuthMiddleware, async (req, res) => {
     }
 });
 
+// route to delete the project card
+router.delete("/deleteProjectRoom/:roomId", async (req, res) => {
+    const roomId = req.params.roomId;
+    console.log(`Room id: ${roomId}`);
+    try {
+        // Find the project room to be deleted
+        const projectRoom = await ProjectRoomSchema.findById(roomId);
+        if (!projectRoom) {
+            return res.status(404).json({ message: "Project room not found." });
+        }
+  
+        // Gather user emails of all members in the project room
+        const memberUserIds = projectRoom.members.map((member) => member.userId);
+        const usersToUpdate = await User.find({
+            $or: [{ createdRooms: roomId }, { joinedRooms: roomId }],
+        });
+  
+        const userEmails = usersToUpdate.map((user) => user.email);
+  
+        // Remove the project room reference from each user's createdRooms and joinedRooms
+        await User.updateMany(
+            { _id: { $in: memberUserIds } },
+            {
+                $pull: {
+                    createdRooms: roomId,
+                    joinedRooms: roomId,
+                },
+            }
+        );
+  
+        // Delete the project room from the ProjectRoom collection
+        await ProjectRoomSchema.findByIdAndDelete(roomId);
+  
+        // Send deletion notifications to all members
+        await mailSetup.sendDeletionNotifications(userEmails);
+  
+        // Respond with a success message and list of notified emails
+        res.status(200).json({
+            message: "Project room deleted successfully.",
+            notifiedEmails: userEmails,
+        });
+  
+    } catch (error) {
+        console.error("Error deleting project room:", error);
+        res.status(500).json({ message: "An error occurred while deleting the project room." });
+    }
+});
+
+
+router.post('/uploadFile', upload.single('file-upload'), (req, res) => {
+    try {
+        const title = req.body.title || req.file.originalname;
+        const fileExtension = path.extname(req.file.originalname);
+        const fileName = `${title}${fileExtension}`;
+        const fileType = req.file.mimetype;
+
+        // Insert file information into the database
+        const query = 'INSERT INTO files_table (file_name, file_type) VALUES (?, ?)';
+        connection.query(query, [fileName, fileType], (error, results) => {
+            if (error) {
+                console.error('Database insertion error:', error);
+                return res.status(500).send('Database error');
+            }
+            res.status(200).json({ message: 'File uploaded and data saved to database', fileId: results.insertId });
+        });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).send('File upload error');
+    }
+});
+
+router.get('/getAllData', (req, res) => {
+    const { fileType } = req.query;
+    console.log(`file type: ${fileType}`);
+    let query = `SELECT * FROM files_table`;
+
+    if (fileType && fileType !== "all") {
+        query += ` WHERE file_type = ?`;
+    }
+
+    connection.query(query, [fileType], (error, results) => {
+        if (error) {
+            console.log(error);
+            res.status(500).json({ error: error });
+        } else {
+            res.status(200).json(results);
+        }
+    });
+});
+
+// delete file route
+router.delete('/deleteFile/:id', (req, res) => {
+    const { id } = req.params;
+
+    // Query to get file_name and file_type based on file id
+    const fetchFileQuery = 'SELECT file_name, file_type FROM files_table WHERE id = ?';
+
+    connection.query(fetchFileQuery, [id], (err, results) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.status(500).json({ error: 'Failed to retrieve file details' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'File not found in database' });
+        }
+
+        const { file_name, file_type } = results[0];
+        const extension = file_type.split('/')[1]; // Extract the file extension
+
+        // Define the base uploads directory
+        const baseDirectory = path.join(__dirname, '../public/uploads');
+
+        // Map extension to subdirectory based on the original multer setup
+        const subdirectories = {
+            pdf: 'pdf',
+            jpeg: 'images',
+            jpg: 'images',
+            png: 'images',
+            doc: 'documents',
+            docx: 'documents',
+            html: 'html',
+            css: 'css',
+            js: 'js'
+        };
+
+        // Determine the subdirectory based on the file extension
+        const subdirectory = subdirectories[extension];
+        if (!subdirectory) {
+            return res.status(400).json({ error: 'Unsupported file type' });
+        }
+
+        // Construct the full file path
+        const filePath = path.join(baseDirectory, subdirectory, file_name);
+
+        // Log the constructed path for debugging
+        console.log("Attempting to delete file at path:", filePath);
+
+        // Delete the file from the disk
+        fs.unlink(filePath, (unlinkErr) => {
+            if (unlinkErr) {
+                if (unlinkErr.code === 'ENOENT') {
+                    console.error("File not found:", filePath);
+                    return res.status(404).json({ error: 'File not found on filesystem' });
+                } else {
+                    console.error("Filesystem Error:", unlinkErr);
+                    return res.status(500).json({ error: 'Failed to delete file from filesystem' });
+                }
+            }
+
+            // If file deletion is successful, delete the database record
+            const deleteQuery = 'DELETE FROM files_table WHERE id = ?';
+            connection.query(deleteQuery, [id], (dbErr, result) => {
+                if (dbErr) {
+                    console.error("Database Error:", dbErr);
+                    return res.status(500).json({ error: 'Failed to delete file record from database' });
+                }
+
+                res.status(200).json({ message: 'File and record deleted successfully' });
+            });
+        });
+    });
+});
 
 module.exports = router;

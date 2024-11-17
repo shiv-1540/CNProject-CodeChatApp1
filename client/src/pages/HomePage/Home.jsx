@@ -13,6 +13,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext"; // AuthContext import
 import defaultProfile from "../../assets/ProfileImages/avtaar.jpg";
 import logo from "../../../public/logo-white.png";
+import noData from "../../assets/no-data.png"
 
 const Home = () => {
   const navigate = useNavigate();
@@ -34,21 +35,18 @@ const Home = () => {
       })
       .then((response) => {
         if (response.status === 200) {
-          console.log(response.data);
+          console.log(`project Rooms: ${response.data.projectRooms}`);
           setProjectRooms(response.data.projectRooms);
           setUserInfo(response.data.userInfo);
           setProfilePic(
-            userInfo.profilePic
+            response.data.userInfo.profilePic
               ? require(`../../assets/ProfileImages/${response.data.userInfo.profilePic}`)
               : defaultProfile
           );
-        } else {
-          alert("No Data currently");
         }
       })
       .catch((error) => {
         console.error("Error fetching project rooms:", error);
-        // alert("Error fetching project rooms: " + error.message);
       });
   }, [authData, navigate]);
 
@@ -78,7 +76,7 @@ const Home = () => {
             Code Share
           </p>
         </div>
-        <div style={{display:"flex", flexDirection:"column", gap:"1rem 0"}}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem 0" }}>
           <div className="profilePicBox">
             <img src={userProfilePic} alt="profile-pic" />
           </div>
@@ -100,7 +98,7 @@ const Home = () => {
             navigate("/"); // Navigate to login page
             toast({
               title: "Logged Out Successfully",
-              description: "Logout Out!",
+              description: "Logged Out!",
               status: "Success",
               duration: 3000,
               isClosable: true,
@@ -169,10 +167,18 @@ const Home = () => {
             </Select>
           </div>
 
+            {/* project rooms cards mounted here */}
           <div className="projects-card-box">
-            {projectRooms.map((room) => (
-              <ProjectCard key={room._id} room={room} /> // Pass room data to ProjectCard
-            ))}
+            {projectRooms.length > 0 ? (
+              projectRooms.map((room) => (
+                <ProjectCard key={room._id} room={room} />
+              ))
+            ) : (
+              <div className="no-data-container">
+                <img src={noData} alt="No data found" />
+                {/* <p>No projects available</p> */}
+              </div>
+            )}
           </div>
         </div>
       </section>

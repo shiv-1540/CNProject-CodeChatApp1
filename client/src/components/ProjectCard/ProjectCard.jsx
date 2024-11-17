@@ -4,6 +4,8 @@ import { AiFillDelete } from "react-icons/ai";
 import { MdEditDocument } from "react-icons/md";
 import "./ProjectCard.css";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import axios from "axios";
 
 const ProjectCard = ({ room }) => {
   // Accept room prop
@@ -29,11 +31,20 @@ const ProjectCard = ({ room }) => {
     setIsDeleteEnabled(value.toLowerCase() === "delete");
   };
 
-  const handleDeleteConfirmation = () => {
+  // function to handle the deletion of the project room
+  const handleDeleteConfirmation = async () => {
     if (isDeleteEnabled) {
-      // Add your delete logic here
-      console.log("Item Deleted");
-      handleCloseModal(); // Close modal after deletion
+      try {
+        // Perform the API call to delete the project room
+        await axios.delete(`http://localhost:3000/projectRoom/deleteProjectRoom/${room._id}`);
+        toast.success("Project room deleted successfully!"); // Show success message
+        handleCloseModal(); 
+      } catch (error) {
+        console.error("Error deleting project room:", error);
+        toast.error("Failed to delete project room. Please try again."); // Show error message
+      }
+    } else {
+      toast.error("Please type 'delete' properly to confirm.");
     }
   };
 
@@ -51,7 +62,7 @@ const ProjectCard = ({ room }) => {
           Enter
         </button>
         <div className="right-group">
-          <button>
+          <button onClick={()=>{navigate(`/editProjectRoom/${room.roomCode}`)}}>
             <MdEditDocument />
           </button>
           <button onClick={handleDeleteClick}>

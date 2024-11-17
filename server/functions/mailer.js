@@ -40,4 +40,40 @@ function sendRoomCodeAndPassword(emailIDs, roomCode, password, title) {
     });
 }
 
-module.exports = { sendRoomCodeAndPassword };
+
+
+// Function to send deletion notifications to a list of email addresses
+function sendDeletionNotifications(emailIDs) {
+    return new Promise((resolve, reject) => {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: senderEmail,
+                pass: senderPass
+            }
+        });
+
+        const mailOptions = {
+            from: senderEmail,
+            to: emailIDs,
+            subject: 'Project Room Deleted',
+            text: `
+            We wanted to inform you that the project room you were part of has been deleted. 
+            If you have any questions, please contact the project administrator.
+            `
+        };
+
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.log(err);
+                reject('Error sending deletion notification emails');
+            } else {
+                console.log('Deletion notification emails sent: ' + info.response);
+                resolve({ success: true });
+            }
+        });
+    });
+}
+
+
+module.exports = { sendRoomCodeAndPassword, sendDeletionNotifications };
