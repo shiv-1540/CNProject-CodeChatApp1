@@ -31,7 +31,7 @@ const LoginForm = () => {
         .then(response => {
           if (response.data.token && response.data.id) {
             // Store both token and userId in the context
-            login(response.data.token, response.data.id);
+            login(response.data.token, response.data.id,response.data.username);
             toast.success('Logged In Successfully!');
             navigate('/home'); // Redirect to home
           } else {

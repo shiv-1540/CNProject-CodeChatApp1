@@ -11,6 +11,7 @@ import Output from "./Output";
 import LanguageSelector from './LanguageSelector';
 import { CODE_SNIPPETS } from './constants';
 
+
 const Editor = ({ socketRef, roomId, onCodeChange }) => {
     const [language, setLanguage] = useState("javascript");
     const editorRef = useRef(null);
@@ -59,25 +60,36 @@ const Editor = ({ socketRef, roomId, onCodeChange }) => {
       // Update language and code snippet when language changes
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
-    const newSnippet = CODE_SNIPPETS[lang] || "";
+    const newSnippet = CODE_SNIPPETS[lang] ;
     setValue(newSnippet);
     editorRef.current?.setValue(newSnippet);
   };
 
 
+
     return(
-         <Box>
-           <HStack spacing={4} >
-             <Box w="50%">
-                <LanguageSelector
-                   language={language}
-                   onSelect={handleLanguageChange}
-                />
-                <textarea id="realtimeEditor"></textarea>;
-            </Box>
-            <Output editorRef={editorRef} language={language}  />
-          </HStack>
-        </Box>
+        <div className="p-4 bg-black text-white min-h-screen"> 
+          <div className="flex flex-col md:flex-row gap-6">
+             {/* Left: Editor + Language + Save */}
+              <div className="w-full md:w-1/2">
+               {/* Language selector and Save button side-by-side */} 
+               <div className="flex items-center justify-between mb-3">
+                 <LanguageSelector language={language} onSelect={handleLanguageChange} />
+                  
+                </div>
+        {/* Code editor */}
+  <textarea
+    id="realtimeEditor"
+    className="w-full h-[75vh] bg-zinc-900 text-white p-4 rounded-md font-mono resize-none focus:outline-none border border-zinc-700"
+  ></textarea>
+</div>
+
+{/* Right: Output panel */}
+<div className="w-full md:w-1/2">
+  <Output editorRef={editorRef} language={language} />
+</div>
+</div> </div>
+        
     ); 
 };
 

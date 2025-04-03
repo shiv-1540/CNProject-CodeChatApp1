@@ -31,7 +31,7 @@ const Output = ({ editorRef, language }) => {
 
   return (
     <Box w="50%">
-      <Text mb={2} fontSize="lg">
+      <Text mb={2} fontSize="lg" color={"white"}>
         Output
       </Text>
       <Button
@@ -46,7 +46,7 @@ const Output = ({ editorRef, language }) => {
       <Box
         height="75vh"
         p={2}
-        color={isError ? "red.400" : ""}
+        color={isError ? "red.400" : "whiteAlpha.900"}
         border="1px solid"
         borderRadius={4}
         borderColor={isError ? "red.500" : "#333"}

@@ -49,13 +49,14 @@ router.post('/loginSubmission', async (req, res) => {
         // Generate a JWT token
         const userData = {
             id: user._id,
-            email: user.email
+            email: user.email,
+            username:user.username
         };
 
         const token = generateToken(userData);
 
         // Send the token and user data to the client
-        return res.status(200).json({ message: 'Login successful', token, id: userData.id });
+        return res.status(200).json({ message: 'Login successful', token, id: userData.id ,username:userData.username});
     } catch (err) {
         res.status(500).send(`Error occurred: ${err}`);
         console.error('Error during login:', err);

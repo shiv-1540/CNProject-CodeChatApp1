@@ -5,9 +5,9 @@ require('dotenv').config();
 // Create a connection to the MySQL database
 const connection = mysql.createConnection({
   host: 'localhost',     
-  user: 'dbtester',           
-  password: 'dbtester123',   
-  database: 'file_storage_database', 
+  user: 'shiv',           
+  password: '4102',   
+  database: 'file_storage_database',
 });
 
 // Connect to the MySQL server
